@@ -1,0 +1,176 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sensor Resistance Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: two side-by-side sensor cards (LDR, thermistor), each with predict -> slide -> read; shared readings table below */
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#16233A; --muted:#5A6678; --line:#D6DCE6;
+  --ldr:#1B4B8F; --therm:#B23A1C; --good:#1E7A4D; --warn:#9A6A00; --soft:#E9EEF6; --soft2:#F8E9E3;
+  --head:"Space Grotesk","Segoe UI",system-ui,sans-serif; --body:"Inter","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1623; --panel:#18212F; --ink:#E8EDF5; --muted:#9BA7BA; --line:#2C3849;
+  --ldr:#7FB0F2; --therm:#F1906F; --good:#59C58F; --warn:#E5B64A; --soft:#1F2C42; --soft2:#3A241D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1623; --panel:#18212F; --ink:#E8EDF5; --muted:#9BA7BA; --line:#2C3849;
+  --ldr:#7FB0F2; --therm:#F1906F; --good:#59C58F; --warn:#E5B64A; --soft:#1F2C42; --soft2:#3A241D; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);padding-block:20px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));line-height:1.45}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-family:var(--head);font-size:1.7rem;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 14px;max-width:70ch}
+.eq{display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-family:var(--head);font-weight:700;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card h2{font-family:var(--head);font-size:1.2rem;margin:0 0 2px}
+.ldr h2{color:var(--ldr)} .therm h2{color:var(--therm)}
+.step{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opts button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer}
+.opts button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ldr);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--ldr)} .therm input[type=range]{accent-color:var(--therm)}
+.row{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem}
+.read{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0}
+.big{font-family:var(--head);font-size:2.1rem;font-weight:700;font-variant-numeric:tabular-nums}
+.ldr .big{color:var(--ldr)} .therm .big{color:var(--therm)}
+.bar{height:12px;background:var(--soft);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.therm .bar{background:var(--soft2)}
+.bar i{display:block;height:100%;background:var(--ldr);width:50%;transition:width .12s}
+.therm .bar i{background:var(--therm)}
+.calc{font-family:var(--head);font-variant-numeric:tabular-nums;margin:8px 0;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.verdict{min-height:2.7em;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted)}
+.verdict.ok{color:var(--good);border-style:solid;border-color:var(--good)}
+.verdict.no{color:var(--warn);border-style:solid;border-color:var(--warn)}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:600;border:0;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+svg{width:100%;height:auto;max-height:170px;display:block;margin-top:6px}
+svg text{fill:var(--ink);font-family:var(--body);font-size:12px}
+svg .w{stroke:var(--ink);stroke-width:2;fill:none}
+.tbl{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{background:var(--soft);font-size:.85rem}
+td.empty{color:var(--muted)}
+.note{color:var(--muted);font-size:.85rem;margin-top:12px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+<div class="wrap">
+  <h1>Sensor Resistance Lab</h1>
+  <p class="sub">Predict first, then move the slider and read the meter. Both sensors sit in a 12 V circuit, so the current follows from V = I × R.</p>
+  <div class="eq">V = I × R &nbsp;·&nbsp; I = V ÷ R &nbsp;·&nbsp; R = V ÷ I</div>
+  <div class="grid">
+    <section class="card ldr" id="c-ldr">
+      <h2>Light-dependent resistor (LDR)</h2>
+      <div class="sub" style="margin:0">Shine more light on the LDR.</div>
+      <div class="step">1 · Predict: as the light gets brighter, the resistance…</div>
+      <div class="opts" data-k="ldr">
+        <button aria-pressed="false" data-v="up">increases</button>
+        <button aria-pressed="false" data-v="down">decreases</button>
+        <button aria-pressed="false" data-v="same">stays the same</button>
+      </div>
+      <div class="step">2 · Test: change the light level</div>
+      <input type="range" id="s-ldr" min="0" max="100" value="10" aria-label="Light level">
+      <div class="row"><span>Dark</span><span id="v-ldr">Light level: 10%</span><span>Bright</span></div>
+      <div class="read"><span class="big" id="r-ldr">–</span><span style="color:var(--muted)">resistance of the LDR</span></div>
+      <div class="bar" aria-hidden="true"><i id="b-ldr"></i></div>
+      <svg viewBox="0 0 320 130" role="img" aria-label="Circuit with a 12 V cell, an LDR and an ammeter">
+        <rect x="30" y="25" width="260" height="80" rx="4" class="w"/>
+        <rect x="14" y="48" width="32" height="34" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="30" y="70" text-anchor="middle">12 V</text>
+        <rect x="110" y="13" width="64" height="24" fill="var(--panel)" stroke="var(--ldr)" stroke-width="2.5"/><text x="142" y="29" text-anchor="middle">LDR</text>
+        <circle cx="250" cy="105" r="17" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="250" y="109" text-anchor="middle" id="a-ldr">A</text>
+      </svg>
+      <div class="calc" id="k-ldr">I = V ÷ R</div>
+      <div class="verdict" id="d-ldr">Make your prediction, then move the slider.</div>
+      <div class="actions"><button class="btn" data-rec="ldr">Record reading</button></div>
+    </section>
+
+    <section class="card therm" id="c-th">
+      <h2>Thermistor</h2>
+      <div class="sub" style="margin:0">Warm the thermistor up.</div>
+      <div class="step">1 · Predict: as the temperature rises, the resistance…</div>
+      <div class="opts" data-k="th">
+        <button aria-pressed="false" data-v="up">increases</button>
+        <button aria-pressed="false" data-v="down">decreases</button>
+        <button aria-pressed="false" data-v="same">stays the same</button>
+      </div>
+      <div class="step">2 · Test: change the temperature</div>
+      <input type="range" id="s-th" min="0" max="100" value="20" aria-label="Temperature">
+      <div class="row"><span>0 °C</span><span id="v-th">Temperature: 20 °C</span><span>100 °C</span></div>
+      <div class="read"><span class="big" id="r-th">–</span><span style="color:var(--muted)">resistance of the thermistor</span></div>
+      <div class="bar" aria-hidden="true"><i id="b-th"></i></div>
+      <svg viewBox="0 0 320 130" role="img" aria-label="Circuit with a 12 V cell, a thermistor and an ammeter">
+        <rect x="30" y="25" width="260" height="80" rx="4" class="w"/>
+        <rect x="14" y="48" width="32" height="34" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="30" y="70" text-anchor="middle">12 V</text>
+        <rect x="100" y="13" width="84" height="24" fill="var(--panel)" stroke="var(--therm)" stroke-width="2.5"/><text x="142" y="29" text-anchor="middle">Thermistor</text>
+        <circle cx="250" cy="105" r="17" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="250" y="109" text-anchor="middle" id="a-th">A</text>
+      </svg>
+      <div class="calc" id="k-th">I = V ÷ R</div>
+      <div class="verdict" id="d-th">Make your prediction, then move the slider.</div>
+      <div class="actions"><button class="btn" data-rec="th">Record reading</button></div>
+    </section>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Sensor</th><th>Setting</th><th>Resistance R</th><th>Current I = 12 ÷ R</th></tr></thead>
+      <tbody id="rows"><tr><td class="empty" colspan="4">No readings yet. Press “Record reading” at two or more settings, then describe the pattern in your notebook.</td></tr></tbody>
+    </table>
+    <div class="actions"><button class="btn alt" id="clear">Clear readings</button></div>
+  </div>
+  <p class="note">Model values for revision: the curves show the correct trend for each sensor, not data from one real component.</p>
+</div>
+<script>
+const V=12;
+const model={
+  ldr:{el:'ldr',start:10,R:L=>200+19800*Math.exp(-0.045*L),label:L=>L+'%',name:'LDR',stim:'light'},
+  th:{el:'th',start:20,R:T=>{const K=T+273.15;return 5000*Math.exp(3500*(1/K-1/298.15));},label:T=>T+' °C',name:'Thermistor',stim:'temperature'}
+};
+const pred={ldr:null,th:null};
+const fmtR=r=>r>=1000?(r/1000).toFixed(r>=10000?1:2)+' kΩ':Math.round(r)+' Ω';
+const fmtI=i=>i<0.1?(i*1000).toFixed(1)+' mA':i.toFixed(3)+' A';
+function update(k){
+  const m=model[k], s=document.getElementById('s-'+m.el), x=+s.value, R=m.R(x), I=V/R;
+  document.getElementById('v-'+m.el).textContent=(k==='ldr'?'Light level: ':'Temperature: ')+m.label(x);
+  document.getElementById('r-'+m.el).textContent=fmtR(R);
+  const maxR=m.R(0);
+  document.getElementById('b-'+m.el).style.width=Math.max(2,Math.min(100,R/maxR*100))+'%';
+  document.getElementById('k-'+m.el).textContent='I = V ÷ R = 12 ÷ '+Math.round(R)+' = '+fmtI(I);
+  const d=document.getElementById('d-'+m.el);
+  const diff=x-m.start;
+  if(Math.abs(diff)<25){d.className='verdict';d.textContent=pred[k]?'Now move the slider at least a quarter of the way along.':'Make your prediction, then move the slider.';return}
+  const dir=(m.R(x)<m.R(m.start))?'down':'up';
+  const stimTxt=diff>0?'more '+(k==='ldr'?'light':'heat'):'less '+(k==='ldr'?'light':'heat');
+  const result='With '+stimTxt+', resistance '+(dir==='down'?'decreased':'increased')+'.';
+  if(!pred[k]){d.className='verdict';d.textContent=result+' Choose a prediction above to check it.';return}
+  const want=diff>0?'down':'up';
+  const p=pred[k];
+  if(p===want){d.className='verdict ok';d.textContent='Your prediction matches. '+result+' As '+(k==='ldr'?'light':'temperature')+' increases, resistance decreases.'}
+  else{d.className='verdict no';d.textContent='Not quite. '+result+' Try again: as '+(k==='ldr'?'light':'temperature')+' increases, does the resistance go up or down?'}
+}
+document.querySelectorAll('.opts').forEach(g=>{
+  g.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); const k=g.dataset.k; pred[k]=b.dataset.v;
+    // predictions are about "stimulus increases": map to want
+    update(k==='th'?'th':'ldr');
+  });
+});
+['ldr','th'].forEach(k=>document.getElementById('s-'+k).addEventListener('input',()=>update(k)));
+document.querySelectorAll('[data-rec]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.rec, m=model[k], x=+document.getElementById('s-'+m.el).value, R=m.R(x);
+  const tb=document.getElementById('rows'); if(tb.querySelector('.empty')) tb.innerHTML='';
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+m.name+'</td><td>'+(k==='ldr'?'Light '+x+'%':x+' °C')+'</td><td>'+fmtR(R)+'</td><td>'+fmtI(V/R)+'</td>';
+  tb.appendChild(tr);
+}));
+document.getElementById('clear').addEventListener('click',()=>{
+  document.getElementById('rows').innerHTML='<tr><td class="empty" colspan="4">No readings yet. Press “Record reading” at two or more settings, then describe the pattern in your notebook.</td></tr>';
+});
+update('ldr');update('th');
+</script>
+
+</body></html>
